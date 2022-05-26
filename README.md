@@ -32,13 +32,13 @@ cargo run --example window
 
 ## Common issues
 
-Please refer to [ISSUES.md.](ISSUES.md)
+Please refer to [ISSUES.md](ISSUES.md).
 
 ### Usage
 
 Glutin is an OpenGL context creation library and doesn't directly provide OpenGL bindings for you.
 
-For examples, please look [here.](https://github.com/rust-windowing/glutin/tree/master/glutin_examples)
+For examples, please look [here](https://github.com/rust-windowing/glutin/tree/master/glutin_examples).
 
 Note that glutin aims at being a low-level brick in your rendering infrastructure. You are encouraged to write another layer of abstraction between glutin and your application.
 
@@ -48,9 +48,13 @@ Glutin is only officially supported on the latest stable version of the Rust com
 
 ### Android
 
-To compile the examples for android, you have to use the `cargo apk` utility.
+Be sure to handle Android's lifecycle correctly when using a `winit` window by only creating a GL surface (currently entire context) after `winit` raises `Event::Resumed`, and destroy it again upon receiving `Event::Suspended`. See this in action in [the `android.rs` example](./glutin_examples/examples/android.rs).
 
-See [`cargo-apk` in the `android-ndk-rs` repository](https://github.com/rust-windowing/android-ndk-rs/cargo-apk) for instructions.
+To compile and run the Android example on your device, install [`cargo-apk`](https://crates.io/crates/cargo-apk) and start the app using:
+
+```console
+$ cargo apk r -p glutin_examples --example android
+```
 
 ### X11
 

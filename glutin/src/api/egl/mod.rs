@@ -964,7 +964,8 @@ where
         out.push(surface_type as raw::c_int);
 
         match (api, version) {
-            (Api::OpenGlEs, Some((3, _))) => {
+            // TODO: `version` is `None` when GLRequest is Latest
+            (Api::OpenGlEs, None | Some((3, _))) => {
                 if egl_version < &(1, 3) {
                     return Err(CreationError::NoAvailablePixelFormat);
                 }
@@ -999,7 +1000,7 @@ where
                 out.push(ffi::egl::CONFORMANT as raw::c_int);
                 out.push(ffi::egl::OPENGL_BIT as raw::c_int);
             }
-            (_, _) => unimplemented!(),
+            (api, version) => unimplemented!("{:?} at version {:?}", api, version),
         };
 
         if let Some(hardware_accelerated) = pf_reqs.hardware_accelerated {

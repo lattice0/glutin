@@ -1,4 +1,4 @@
-#![cfg(any(target_os = "windows"))]
+#![cfg(target_os = "windows")]
 
 mod make_current_guard;
 
