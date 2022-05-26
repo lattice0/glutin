@@ -17,3 +17,10 @@ image = "0.21"
 
 [build-dependencies]
 gl_generator = "0.14"
+
+[target.'cfg(target_os = "android")'.dependencies]
+ndk-glue = "0.5" # Keep in sync with winit
+
+[[example]]
+name = "android"
+crate-type = ["cdylib"]
