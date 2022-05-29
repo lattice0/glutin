@@ -10,6 +10,7 @@ use glutin::window::WindowBuilder;
 fn main() {
     println!("App started");
     let el = EventLoop::new();
+    let window = WindowBuilder::new().with_title("Hello world!").build(&el).unwrap();
 
     // On Android a window is only available (ndk_glue::native_window() returns Some,
     // to create an EGL context on) after Resumed is received, and disappears when
@@ -17,7 +18,7 @@ fn main() {
 
     let mut state = None;
 
-    el.run(move |event, el, control_flow| {
+    el.run(move |event, _, control_flow| {
         *control_flow = ControlFlow::Wait;
 
         println!("{:?}", &event);
@@ -25,13 +26,12 @@ fn main() {
         match event {
             Event::Resumed => {
                 println!("Android window available");
-                let wb = WindowBuilder::new().with_title("Hello world!");
                 let windowed_context =
-                    glutin::ContextBuilder::new().build_windowed(wb, el).unwrap();
+                    glutin::ContextBuilder::new().build_windowed(&window).unwrap();
 
                 let windowed_context = unsafe { windowed_context.make_current().unwrap() };
 
-                let gl = support::load(windowed_context.context());
+                let gl = support::load(&windowed_context);
 
                 state = Some((windowed_context, gl));
             }
@@ -43,11 +43,11 @@ fn main() {
             Event::WindowEvent { event: WindowEvent::CloseRequested, .. } => {
                 *control_flow = ControlFlow::Exit
             }
-            Event::WindowEvent { event: WindowEvent::Resized(size), .. } => {
-                if let Some((windowed_context, _)) = &state {
-                    windowed_context.resize(size);
-                    windowed_context.window().request_redraw();
-                }
+            Event::WindowEvent { event: WindowEvent::Resized(_size), .. } => {
+                // if let Some((windowed_context, _)) = &state {
+                //     windowed_context.resize(size);
+                //     windowed_context.window().request_redraw();
+                // }
             }
             Event::RedrawRequested(_) => {
                 if let Some((windowed_context, gl)) = &state {

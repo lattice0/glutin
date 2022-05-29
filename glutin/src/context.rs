@@ -37,6 +37,10 @@ pub struct Context<T: ContextCurrentState> {
 }
 
 impl<T: ContextCurrentState> Context<T> {
+    pub fn swap_buffers(&self) -> Result<(), ContextError> {
+        self.context.swap_buffers()
+    }
+
     /// See [`ContextWrapper::make_current`].
     ///
     /// [`ContextWrapper::make_current`]:
