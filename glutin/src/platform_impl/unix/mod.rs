@@ -25,9 +25,9 @@ pub use x11::utils as x11_utils;
 #[cfg(feature = "x11")]
 use crate::platform::unix::x11::XConnection;
 use crate::platform::unix::EventLoopWindowTargetExtUnix;
+use raw_window_handle::HasRawWindowHandle;
 use winit::dpi;
 use winit::event_loop::EventLoopWindowTarget;
-use winit::window::{Window, WindowBuilder};
 
 use std::marker::PhantomData;
 use std::os::raw;
@@ -96,34 +96,48 @@ impl Context {
     }
 
     #[inline]
-    pub fn new_windowed<T>(
-        wb: WindowBuilder,
-        el: &EventLoopWindowTarget<T>,
+    pub fn new_windowed(
+        handle: impl HasRawWindowHandle,
+        inner_size: (u32, u32),
         pf_reqs: &PixelFormatRequirements,
         gl_attr: &GlAttributes<&Context>,
-    ) -> Result<(Window, Self), CreationError> {
-        #[cfg(feature = "wayland")]
-        if el.is_wayland() {
-            Context::is_compatible(&gl_attr.sharing, ContextType::Wayland)?;
+    ) -> Result<Self, CreationError> {
+        match handle.raw_window_handle() {
+            raw_window_handle::RawWindowHandle::UiKit(_) => todo!(),
+            raw_window_handle::RawWindowHandle::AppKit(_) => todo!(),
+            raw_window_handle::RawWindowHandle::Orbital(_) => todo!(),
+            raw_window_handle::RawWindowHandle::Xlib(_) => todo!(),
+            raw_window_handle::RawWindowHandle::Xcb(_) => todo!(),
+            // #[cfg(feature = "wayland")]
+            raw_window_handle::RawWindowHandle::Wayland(handle) => {
+                Context::is_compatible(&gl_attr.sharing, ContextType::Wayland)?;
 
-            let gl_attr = gl_attr.clone().map_sharing(|ctx| match *ctx {
-                Context::Wayland(ref ctx) => ctx,
-                _ => unreachable!(),
-            });
-            return wayland::Context::new(wb, el, pf_reqs, &gl_attr)
-                .map(|(win, context)| (win, Context::Wayland(context)));
+                let gl_attr = gl_attr.clone().map_sharing(|ctx| match *ctx {
+                    Context::Wayland(ref ctx) => ctx,
+                    _ => unreachable!(),
+                });
+                wayland::Context::new(handle, inner_size, pf_reqs, &gl_attr).map(Context::Wayland)
+            }
+            raw_window_handle::RawWindowHandle::Win32(_) => todo!(),
+            raw_window_handle::RawWindowHandle::WinRt(_) => todo!(),
+            raw_window_handle::RawWindowHandle::Web(_) => todo!(),
+            raw_window_handle::RawWindowHandle::AndroidNdk(_) => todo!(),
+            raw_window_handle::RawWindowHandle::Haiku(_) => todo!(),
+            p => panic!("glutin was not compiled with support for display server `{:?}`", p),
         }
-        #[cfg(feature = "x11")]
-        if el.is_x11() {
-            Context::is_compatible(&gl_attr.sharing, ContextType::X11)?;
-            let gl_attr = gl_attr.clone().map_sharing(|ctx| match *ctx {
-                Context::X11(ref ctx) => ctx,
-                _ => unreachable!(),
-            });
-            return x11::Context::new(wb, el, pf_reqs, &gl_attr)
-                .map(|(win, context)| (win, Context::X11(context)));
-        }
-        panic!("glutin was not compiled with support for this display server")
+
+        // if el.is_wayland() {
+        // }
+        // #[cfg(feature = "x11")]
+        // if el.is_x11() {
+        //     Context::is_compatible(&gl_attr.sharing, ContextType::X11)?;
+        //     let gl_attr = gl_attr.clone().map_sharing(|ctx| match *ctx {
+        //         Context::X11(ref ctx) => ctx,
+        //         _ => unreachable!(),
+        //     });
+        //     return x11::Context::new(wb, el, pf_reqs, &gl_attr)
+        //         .map(|(win, context)| (win, Context::X11(context)));
+        // }
     }
 
     #[inline]

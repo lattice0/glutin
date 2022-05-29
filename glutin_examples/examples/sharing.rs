@@ -27,9 +27,13 @@ fn main() {
     let headless_context =
         ContextBuilder::new().build_headless(&el, PhysicalSize::new(1, 1)).unwrap();
 
-    let wb = WindowBuilder::new().with_title("A fantastic window!").with_inner_size(size);
+    let window = WindowBuilder::new()
+        .with_title("A fantastic window!")
+        .with_inner_size(size)
+        .build(&el)
+        .unwrap();
     let windowed_context =
-        ContextBuilder::new().with_shared_lists(&headless_context).build_windowed(wb, &el).unwrap();
+        ContextBuilder::new().with_shared_lists(&headless_context).build_windowed(&window).unwrap();
 
     let headless_id =
         ct.insert(ContextCurrentWrapper::NotCurrent(ContextWrapper::Headless(headless_context)));
