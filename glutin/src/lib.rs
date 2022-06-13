@@ -65,10 +65,9 @@
 [`RawContextExt`]: os/unix/trait.RawContextExt.html
 "
 )]
-#![deny(
-    missing_debug_implementations,
-    //missing_docs,
-)]
+#![deny(missing_debug_implementations)]
+#![allow(clippy::missing_safety_doc, clippy::too_many_arguments)]
+#![cfg_attr(feature = "cargo-clippy", deny(warnings))]
 
 #[cfg(any(
     target_os = "windows",
@@ -117,13 +116,16 @@ pub struct ContextBuilder<'a, T: ContextCurrentState> {
     pub pf_reqs: PixelFormatRequirements,
 }
 
+impl Default for ContextBuilder<'_, NotCurrent> {
+    fn default() -> Self {
+        Self { gl_attr: Default::default(), pf_reqs: Default::default() }
+    }
+}
+
 impl<'a> ContextBuilder<'a, NotCurrent> {
     /// Initializes a new `ContextBuilder` with default values.
     pub fn new() -> Self {
-        ContextBuilder {
-            pf_reqs: std::default::Default::default(),
-            gl_attr: std::default::Default::default(),
-        }
+        Default::default()
     }
 }
 
@@ -313,42 +315,37 @@ impl CreationError {
             _ => CreationError::CreationErrors(vec![Box::new(err), Box::new(self)]),
         }
     }
-
-    fn to_string(&self) -> String {
-        match self {
-            CreationError::OsError(text) | CreationError::NotSupported(text) => text.clone(),
-            CreationError::NoBackendAvailable(_) => "No backend is available".to_string(),
-            CreationError::RobustnessNotSupported => {
-                "You requested robustness, but it is not supported.".to_string()
-            }
-            CreationError::OpenGlVersionNotSupported => {
-                "The requested OpenGL version is not supported.".to_string()
-            }
-            CreationError::NoAvailablePixelFormat => {
-                "Couldn't find any pixel format that matches the criteria.".to_string()
-            }
-            CreationError::PlatformSpecific(text) => text.clone(),
-            CreationError::Window(err) => err.to_string(),
-            CreationError::CreationErrors(_) => "Received multiple errors.".to_string(),
-        }
-    }
 }
 
 impl std::fmt::Display for CreationError {
-    fn fmt(&self, formatter: &mut std::fmt::Formatter) -> Result<(), std::fmt::Error> {
-        formatter.write_str(&self.to_string())?;
-
-        if let CreationError::CreationErrors(ref es) = *self {
-            use std::fmt::Debug;
-            write!(formatter, " Errors: `")?;
-            es.fmt(formatter)?;
-            write!(formatter, "`")?;
-        }
-
-        if let Some(err) = std::error::Error::source(self) {
-            write!(formatter, ": {}", err)?;
-        }
-        Ok(())
+    fn fmt(&self, f: &mut std::fmt::Formatter) -> Result<(), std::fmt::Error> {
+        f.write_str(match self {
+            CreationError::OsError(text)
+            | CreationError::NotSupported(text)
+            | CreationError::PlatformSpecific(text) => text,
+            CreationError::NoBackendAvailable(err) => {
+                return write!(f, "No backend is available: {}", err);
+            }
+            CreationError::RobustnessNotSupported => {
+                "You requested robustness, but it is not supported."
+            }
+            CreationError::OpenGlVersionNotSupported => {
+                "The requested OpenGL version is not supported."
+            }
+            CreationError::NoAvailablePixelFormat => {
+                "Couldn't find any pixel format that matches the criteria."
+            }
+            CreationError::Window(err) => {
+                return write!(f, "{}", err);
+            }
+            CreationError::CreationErrors(ref es) => {
+                writeln!(f, "Received multiple errors:")?;
+                for e in es {
+                    writeln!(f, "\t{}", e)?;
+                }
+                return Ok(());
+            }
+        })
     }
 }
 
@@ -445,10 +442,10 @@ pub enum GlRequest {
 
 impl GlRequest {
     /// Extract the desktop GL version, if any.
-    pub fn to_gl_version(&self) -> Option<(u8, u8)> {
+    pub fn to_gl_version(self) -> Option<(u8, u8)> {
         match self {
-            &GlRequest::Specific(Api::OpenGl, opengl_version) => Some(opengl_version),
-            &GlRequest::GlThenGles { opengl_version, .. } => Some(opengl_version),
+            GlRequest::Specific(Api::OpenGl, opengl_version) => Some(opengl_version),
+            GlRequest::GlThenGles { opengl_version, .. } => Some(opengl_version),
             _ => None,
         }
     }
@@ -589,8 +586,9 @@ pub struct PixelFormatRequirements {
     /// The behavior when changing the current context. Default is `Flush`.
     pub release_behavior: ReleaseBehavior,
 
-    /// X11 only: set internally to insure a certain visual xid is used when
+    /// X11 only: set internally to ensure a certain visual xid is used when
     /// choosing the fbconfig.
+    #[allow(dead_code)]
     pub(crate) x11_visual_xid: Option<std::os::raw::c_ulong>,
 }
 

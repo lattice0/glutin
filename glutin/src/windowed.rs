@@ -1,8 +1,7 @@
 use super::*;
 
 use std::marker::PhantomData;
-use winit::event_loop::EventLoopWindowTarget;
-use winit::window::{Window, WindowBuilder};
+use winit::window::Window;
 
 /// Represents an OpenGL [`Context`] and the [`Window`] with which it is
 /// associated.
@@ -339,15 +338,16 @@ impl<'a, T: ContextCurrentState> ContextBuilder<'a, T> {
     ///
     /// [`WindowedContext<T>`]: type.WindowedContext.html
     /// [`Context`]: struct.Context.html
-    pub fn build_windowed<TE>(
+    pub fn build_windowed(
         self,
-        wb: WindowBuilder,
-        el: &EventLoopWindowTarget<TE>,
-    ) -> Result<WindowedContext<NotCurrent>, CreationError> {
+        handle: impl raw_window_handle::HasRawWindowHandle,
+    ) -> Result<Context<NotCurrent>, CreationError> {
         let ContextBuilder { pf_reqs, gl_attr } = self;
         let gl_attr = gl_attr.map_sharing(|ctx| &ctx.context);
-        platform_impl::Context::new_windowed(wb, el, &pf_reqs, &gl_attr).map(|(window, context)| {
-            WindowedContext { window, context: Context { context, phantom: PhantomData } }
-        })
+        platform_impl::Context::new_windowed(handle, &pf_reqs, &gl_attr)
+            .map(|context| Context { context, phantom: PhantomData })
+        // .map(|(window, context)| {
+        //     WindowedContext { window, context: Context { context, phantom: PhantomData } }
+        // })
     }
 }
