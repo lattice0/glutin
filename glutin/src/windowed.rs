@@ -1,8 +1,7 @@
 use super::*;
 
 use std::marker::PhantomData;
-use winit::event_loop::EventLoopWindowTarget;
-use winit::window::{Window, WindowBuilder};
+use winit::window::Window;
 
 /// Represents an OpenGL [`Context`] and the [`Window`] with which it is
 /// associated.
@@ -105,8 +104,8 @@ impl<T: ContextCurrentState> WindowedContext<T> {
     /// used when intending to transfer the [`RawContext<T>`] to another
     /// thread.
     ///
-    /// Unsaftey:
-    ///   - The OpenGL [`Context`] must be dropped before the [`Window`].
+    /// # Unsafety
+    /// The OpenGL [`Context`] must be dropped before the [`Window`].
     ///
     /// [`RawContext<T>`]: type.RawContext.html
     /// [`Window`]: struct.Window.html
@@ -154,21 +153,6 @@ impl<W> ContextWrapper<PossiblyCurrent, W> {
     /// Returns the pixel format of the main framebuffer of the context.
     pub fn get_pixel_format(&self) -> PixelFormat {
         self.context.context.get_pixel_format()
-    }
-
-    /// Resize the context.
-    ///
-    /// Some platforms (macOS, Wayland) require being manually updated when
-    /// their window or surface is resized.
-    ///
-    /// The easiest way of doing this is to take every [`Resized`] window event
-    /// that is received and pass its [`PhysicalSize`] into this function.
-    ///
-    /// [`PhysicalSize`]: dpi/struct.PhysicalSize.html
-    /// [`Resized`]: event/enum.WindowEvent.html#variant.Resized
-    pub fn resize(&self, size: dpi::PhysicalSize<u32>) {
-        let (width, height) = size.into();
-        self.context.context.resize(width, height);
     }
 
     /// Query the underlying surface back's buffer age.
@@ -339,15 +323,17 @@ impl<'a, T: ContextCurrentState> ContextBuilder<'a, T> {
     ///
     /// [`WindowedContext<T>`]: type.WindowedContext.html
     /// [`Context`]: struct.Context.html
-    pub fn build_windowed<TE>(
+    pub fn build_windowed(
         self,
-        wb: WindowBuilder,
-        el: &EventLoopWindowTarget<TE>,
-    ) -> Result<WindowedContext<NotCurrent>, CreationError> {
+        handle: impl raw_window_handle::HasRawWindowHandle,
+        inner_size: (u32, u32),
+    ) -> Result<Context<NotCurrent>, CreationError> {
         let ContextBuilder { pf_reqs, gl_attr } = self;
         let gl_attr = gl_attr.map_sharing(|ctx| &ctx.context);
-        platform_impl::Context::new_windowed(wb, el, &pf_reqs, &gl_attr).map(|(window, context)| {
-            WindowedContext { window, context: Context { context, phantom: PhantomData } }
-        })
+        platform_impl::Context::new_windowed(handle, inner_size, &pf_reqs, &gl_attr)
+            .map(|context| Context { context, phantom: PhantomData })
+        // .map(|(window, context)| {
+        //     WindowedContext { window, context: Context { context, phantom: PhantomData } }
+        // })
     }
 }

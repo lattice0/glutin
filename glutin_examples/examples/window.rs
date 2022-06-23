@@ -7,15 +7,20 @@ use glutin::ContextBuilder;
 
 fn main() {
     let el = EventLoop::new();
-    let wb = WindowBuilder::new().with_title("A fantastic window!");
+    let window = WindowBuilder::new()
+        .with_title("A fantastic window!")
+        // .with_inner_size(PhysicalSize::<u32>::new(500u32, 500u32))
+        .build(&el)
+        .unwrap();
 
-    let windowed_context = ContextBuilder::new().build_windowed(wb, &el).unwrap();
+    let windowed_context =
+        ContextBuilder::new().build_windowed(&window, window.inner_size().into()).unwrap();
 
     let windowed_context = unsafe { windowed_context.make_current().unwrap() };
 
-    println!("Pixel format of the window's GL context: {:?}", windowed_context.get_pixel_format());
+    // println!("Pixel format of the window's GL context: {:?}", windowed_context.get_pixel_format());
 
-    let gl = support::load(windowed_context.context());
+    let gl = support::load(&windowed_context);
 
     el.run(move |event, _, control_flow| {
         println!("{:?}", event);

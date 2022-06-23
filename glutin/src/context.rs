@@ -37,6 +37,10 @@ pub struct Context<T: ContextCurrentState> {
 }
 
 impl<T: ContextCurrentState> Context<T> {
+    pub fn swap_buffers(&self) -> Result<(), ContextError> {
+        self.context.swap_buffers()
+    }
+
     /// See [`ContextWrapper::make_current`].
     ///
     /// [`ContextWrapper::make_current`]:
@@ -98,6 +102,21 @@ impl Context<PossiblyCurrent> {
     /// struct.ContextWrapper.html#method.get_proc_address
     pub fn get_proc_address(&self, addr: &str) -> *const core::ffi::c_void {
         self.context.get_proc_address(addr)
+    }
+
+    /// Resize the context.
+    ///
+    /// Some platforms (macOS, Wayland) require being manually updated when
+    /// their window or surface is resized.
+    ///
+    /// The easiest way of doing this is to take every [`Resized`] window event
+    /// that is received and pass its [`PhysicalSize`] into this function.
+    ///
+    /// [`PhysicalSize`]: dpi/struct.PhysicalSize.html
+    /// [`Resized`]: event/enum.WindowEvent.html#variant.Resized
+    pub fn resize(&self, size: dpi::PhysicalSize<u32>) {
+        let (width, height) = size.into();
+        self.context.resize(width, height);
     }
 }
 

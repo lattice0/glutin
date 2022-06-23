@@ -9,7 +9,6 @@ use parking_lot::Mutex;
 use raw_window_handle::{AndroidNdkHandle, HasRawWindowHandle, RawWindowHandle};
 use winit::dpi;
 use winit::event_loop::EventLoopWindowTarget;
-use winit::window::WindowBuilder;
 
 use std::sync::Arc;
 
@@ -24,17 +23,16 @@ pub struct Context(Arc<AndroidContext>);
 
 impl Context {
     #[inline]
-    pub fn new_windowed<T>(
-        wb: WindowBuilder,
-        el: &EventLoopWindowTarget<T>,
+    pub fn new_windowed(
+        handle: impl HasRawWindowHandle,
+        _inner_size: (u32, u32),
         pf_reqs: &PixelFormatRequirements,
         gl_attr: &GlAttributes<&Self>,
-    ) -> Result<(winit::window::Window, Self), CreationError> {
-        let win = wb.build(el)?;
+    ) -> Result<Self, CreationError> {
         let gl_attr = gl_attr.clone().map_sharing(|c| &c.0.egl_context);
         let nwin =
             if let RawWindowHandle::AndroidNdk(AndroidNdkHandle { a_native_window, .. }) =
-                win.raw_window_handle()
+                handle.raw_window_handle()
             {
                 a_native_window
             } else {
@@ -50,7 +48,7 @@ impl Context {
 
         let context = Context(ctx);
 
-        Ok((win, context))
+        Ok(context)
     }
 
     #[inline]

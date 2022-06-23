@@ -5,13 +5,12 @@ use crate::{
     ContextError, CreationError, GlAttributes, PixelFormat, PixelFormatRequirements, Rect,
 };
 
-use crate::platform::unix::{EventLoopWindowTargetExtUnix, WindowExtUnix};
+use crate::platform::unix::EventLoopWindowTargetExtUnix;
 use glutin_egl_sys as ffi;
 pub use wayland_client::sys::client::wl_display;
 
 use winit::dpi;
 use winit::event_loop::EventLoopWindowTarget;
-use winit::window::{Window, WindowBuilder};
 
 use std::ops::Deref;
 use std::os::raw;
@@ -81,29 +80,24 @@ impl Context {
         }
     }
 
+    // TODO: Merge with new_raw_context
     #[inline]
-    pub fn new<T>(
-        wb: WindowBuilder,
-        el: &EventLoopWindowTarget<T>,
+    pub fn new(
+        handle: raw_window_handle::WaylandHandle,
+        inner_size: (u32, u32),
         pf_reqs: &PixelFormatRequirements,
         gl_attr: &GlAttributes<&Context>,
-    ) -> Result<(Window, Self), CreationError> {
-        let win = wb.build(el)?;
+    ) -> Result<Self, CreationError> {
+        let (width, height) = inner_size;
 
-        let size = win.inner_size();
-        let (width, height): (u32, u32) = size.into();
-
-        let display_ptr = win.wayland_display().unwrap() as *const _;
-        let surface = win.wayland_surface();
-        let surface = match surface {
-            Some(s) => s,
-            None => {
-                return Err(CreationError::NotSupported("Wayland not found".to_string()));
-            }
-        };
-
-        let context = Self::new_raw_context(display_ptr, surface, width, height, pf_reqs, gl_attr)?;
-        Ok((win, context))
+        Self::new_raw_context(
+            handle.display.cast(),
+            handle.surface,
+            width,
+            height,
+            pf_reqs,
+            gl_attr,
+        )
     }
 
     #[inline]
