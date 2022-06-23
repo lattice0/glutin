@@ -95,7 +95,7 @@ fn main() {
         // Surfaceless doesn't come with a surface, as the name implies, so
         // you must make your own fb.
         //
-        // Making an fb is not neccesary with osmesa, however, can't be bothered
+        // Making an fb is not necessary with osmesa, however, can't be bothered
         // to have a different code path.
         gl.gl.GenRenderbuffers(1, &mut render_buf);
         gl.gl.BindRenderbuffer(gl::RENDERBUFFER, render_buf);
